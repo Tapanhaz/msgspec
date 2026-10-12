@@ -326,7 +326,9 @@ to <code class="docutils literal notranslate"><span class="pre">READONLY</span><
 <li><p>Support <code class="docutils literal notranslate"><span class="pre">TypeForm[]</span></code> type instead of <code class="docutils literal notranslate"><span class="pre">Type[]</span></code> in decoders,
 requires <code class="docutils literal notranslate"><span class="pre">mypy&gt;=2.1</span></code> (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1245">PR #1245</a>)</p></li>
 <li><p>Fix a possible crash when <code class="docutils literal notranslate"><span class="pre">Meta(pattern='...')</span></code>
-was used in loops, (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1256">PR #1256</a>)</p></li>
+was used in loops (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1256">PR #1256</a>)</p></li>
+<li><p>Fix a possible crash when too big ints are passed
+into <code class="docutils literal notranslate"><span class="pre">Meta</span></code>’s constructor (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1260">PR #1260</a>)</p></li>
 </ul>
 </section>
 <section id="version-0-22-0-2026-09-29">
