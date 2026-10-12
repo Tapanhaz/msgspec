@@ -315,7 +315,7 @@
 <li><p>Fix the error state left set when looking up <code class="docutils literal notranslate"><span class="pre">ClassVar</span></code> on a module-level
 <code class="docutils literal notranslate"><span class="pre">typing</span></code> name that is not the real <code class="docutils literal notranslate"><span class="pre">typing</span></code> module. On CPython builds with
 assertions enabled this terminated the interpreter. The lookup error now
-propagates as intended (<a class="extlink-issue reference external" href="https://github.com/msgspec/msgspec/issues/1221">Issue #1221</a>).</p></li>
+propagates as intended (<a class="extlink-issue reference external" href="https://github.com/msgspec/msgspec/issues/1221">Issue #1221</a>)</p></li>
 <li><p>Fix a <code class="docutils literal notranslate"><span class="pre">NameError</span></code> when resolving a generic <code class="docutils literal notranslate"><span class="pre">TypedDict</span></code> defined with PEP 695
 type parameter syntax (<code class="docutils literal notranslate"><span class="pre">class</span> <span class="pre">Foo[T](TypedDict)</span></code>) under
 <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">annotations</span></code> on Python 3.12/3.13. Also prevent a
@@ -325,6 +325,8 @@ which could silently affect decoding on Python 3.12+ (<a class="extlink-pr refer
 to <code class="docutils literal notranslate"><span class="pre">READONLY</span></code> and C level getters (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1244">PR #1244</a>)</p></li>
 <li><p>Support <code class="docutils literal notranslate"><span class="pre">TypeForm[]</span></code> type instead of <code class="docutils literal notranslate"><span class="pre">Type[]</span></code> in decoders,
 requires <code class="docutils literal notranslate"><span class="pre">mypy&gt;=2.1</span></code> (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1245">PR #1245</a>)</p></li>
+<li><p>Fix a possible crash when <code class="docutils literal notranslate"><span class="pre">Meta(pattern='...')</span></code>
+was used in loops, (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1256">PR #1256</a>)</p></li>
 </ul>
 </section>
 <section id="version-0-22-0-2026-09-29">
