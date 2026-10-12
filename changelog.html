@@ -319,6 +319,9 @@ is raised instead (<a class="extlink-pr reference external" href="https://github
 <code class="docutils literal notranslate"><span class="pre">typing</span></code> name that is not the real <code class="docutils literal notranslate"><span class="pre">typing</span></code> module. On CPython builds with
 assertions enabled this terminated the interpreter. The lookup error now
 propagates as intended (<a class="extlink-issue reference external" href="https://github.com/msgspec/msgspec/issues/1221">Issue #1221</a>)</p></li>
+<li><p>Support converting non-dict mappings (such as <code class="docutils literal notranslate"><span class="pre">asyncpg.Record</span></code>) to <code class="docutils literal notranslate"><span class="pre">TypedDict</span></code>
+types with <code class="docutils literal notranslate"><span class="pre">convert</span></code>, matching the existing support for structs and
+dataclasses (<a class="extlink-issue reference external" href="https://github.com/msgspec/msgspec/issues/1239">Issue #1239</a>)</p></li>
 <li><p>Fix a <code class="docutils literal notranslate"><span class="pre">NameError</span></code> when resolving a generic <code class="docutils literal notranslate"><span class="pre">TypedDict</span></code> defined with PEP 695
 type parameter syntax (<code class="docutils literal notranslate"><span class="pre">class</span> <span class="pre">Foo[T](TypedDict)</span></code>) under
 <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">__future__</span> <span class="pre">import</span> <span class="pre">annotations</span></code> on Python 3.12/3.13. Also prevent a
