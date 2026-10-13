@@ -847,6 +847,13 @@ numbers by creating a <code class="docutils literal notranslate"><span class="pr
 <span class="go">b'1.2345'</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is impossible to represent <code class="docutils literal notranslate"><span class="pre">NaN</span></code>, <code class="docutils literal notranslate"><span class="pre">sNaN</span></code>, <code class="docutils literal notranslate"><span class="pre">Inf</span></code>,
+and other non-finite decimal values as numbers.
+<a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ValueError</span></code></a> will be raised in this case.
+Prefer string format if these values are needed.</p>
+</div>
 <p>For JSON and MessagePack you may also pass a callable to <code class="docutils literal notranslate"><span class="pre">decimal_format</span></code> to
 customize how decimals are encoded. The callable will be called with the
 <a class="reference external" href="https://docs.python.org/3/library/decimal.html#decimal.Decimal" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decimal.Decimal</span></code></a> instance as the only argument, and must return a JSON-serializable

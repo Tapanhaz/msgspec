@@ -312,6 +312,8 @@
 <section id="unreleased">
 <h2>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">¶</a></h2>
 <ul class="simple">
+<li><p>Fix invalid <code class="docutils literal notranslate"><span class="pre">json</span></code> that was produced when converting non-finite <code class="docutils literal notranslate"><span class="pre">Decimal</span></code>
+objects with <code class="docutils literal notranslate"><span class="pre">decimal_format=&quot;number&quot;</span></code> (<a class="extlink-issue reference external" href="https://github.com/msgspec/msgspec/issues/1262">Issue #1262</a>)</p></li>
 <li><p>Fix a crash <code class="docutils literal notranslate"><span class="pre">repr()</span></code> call for structs with <code class="docutils literal notranslate"><span class="pre">repr_omit_defaults=True</span></code>
 and partial inner state, now proper <code class="docutils literal notranslate"><span class="pre">AttributeError</span></code>
 is raised instead (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1257">PR #1257</a>)</p></li>
