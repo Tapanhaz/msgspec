@@ -333,6 +333,9 @@ which could silently affect decoding on Python 3.12+ (<a class="extlink-pr refer
 to <code class="docutils literal notranslate"><span class="pre">READONLY</span></code> and C level getters (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1244">PR #1244</a>)</p></li>
 <li><p>Support <code class="docutils literal notranslate"><span class="pre">TypeForm[]</span></code> type instead of <code class="docutils literal notranslate"><span class="pre">Type[]</span></code> in decoders,
 requires <code class="docutils literal notranslate"><span class="pre">mypy&gt;=2.1</span></code> (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1245">PR #1245</a>)</p></li>
+<li><p>Fix how we detect <code class="docutils literal notranslate"><span class="pre">NamedTuple</span></code> subclasses,
+now we also check <code class="docutils literal notranslate"><span class="pre">_fields</span></code> to exist and to be a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>
+and <code class="docutils literal notranslate"><span class="pre">_field_defaults</span></code> to exist and to be a <code class="docutils literal notranslate"><span class="pre">dict</span></code> (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1259">PR #1259</a>)</p></li>
 <li><p>Fix a possible crash when <code class="docutils literal notranslate"><span class="pre">Meta(pattern='...')</span></code>
 was used in loops (<a class="extlink-pr reference external" href="https://github.com/msgspec/msgspec/pull/1256">PR #1256</a>)</p></li>
 <li><p>Fix a possible crash when too big ints are passed
