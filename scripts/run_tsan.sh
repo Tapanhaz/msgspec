@@ -4,7 +4,7 @@ set -euxo pipefail
 cd "$(dirname "$0")/.."
 
 export PYTHON_GIL=0 MSGSPEC_TSAN=1
-export CC="${CC:-clang-21}" CXX="${CXX:-clang++-21}" 
+export CC="${CC:-clang-21}" CXX="${CXX:-clang++-21}"
 export SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0+tsan
 trap 'chown -R --reference=. . 2>/dev/null || true' EXIT
 
@@ -29,21 +29,25 @@ python -c "import msgspec, sys; assert not sys._is_gil_enabled(), 'import re-ena
 
 cat /work/tsan_suppressions/*.txt > /tmp/supp.txt
 cat >> /tmp/supp.txt <<'EOF'
+# CPython's own _decimal races, unrelated to msgspec
 race:dec_addstatus
 race:dec_hash
 EOF
 mkdir -p tsan-logs
 rm -f tsan-logs/*
 
+STRESS=tests/unit/test_free_threading.py
+COMMON=(tests/unit --ignore=tests/unit/test_performance.py --ignore="${STRESS}")
+
 run_phase() {
   local phase=$1; shift
-  TSAN_OPTIONS="suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:log_path=$PWD/tsan-logs/$phase" \
-    pytest tests/unit --ignore=tests/unit/test_performance.py \
-      -p no:randomly -q "$@" || true
+  TSAN_OPTIONS="suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:log_path=$PWD/tsan-logs/${phase}" \
+    pytest "$@" -p no:randomly -q || true
 }
 
-run_phase baseline
-run_phase parallel --parallel-threads=4 --iterations=5
+run_phase stress "${STRESS}"
+run_phase baseline "${COMMON[@]}"
+run_phase parallel "${COMMON[@]}" --parallel-threads=4 --iterations=5
 
 shopt -s nullglob
 logs=(tsan-logs/*)
