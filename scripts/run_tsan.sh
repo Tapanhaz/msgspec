@@ -48,6 +48,13 @@ run_phase parallel --parallel-threads=4 --iterations=5
 {
   echo "## TSAN unique race sites"
   grep -h "SUMMARY: ThreadSanitizer" tsan-logs/* 2>/dev/null | sort | uniq -c | sort -rn
+  echo
+  echo "## Reports by first msgspec frame (_core.c)"
+  awk 'BEGIN{RS="==================\n"}
+       /WARNING: ThreadSanitizer/ {
+         if (match($0, /[^ ]*_core\.c:[0-9]+/)) print substr($0, RSTART, RLENGTH)
+         else print "(no _core.c frame)"
+       }' tsan-logs/* 2>/dev/null | sort | uniq -c | sort -rn
 } | tee tsan-summary.txt | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
 
 ! grep -q "SUMMARY: ThreadSanitizer" tsan-logs/* 2>/dev/null
