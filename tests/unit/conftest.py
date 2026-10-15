@@ -51,3 +51,12 @@ def rand():
 @pytest.fixture(scope="session")
 def package_dir(pytestconfig):
     return pytestconfig.rootpath.joinpath("src", "msgspec")
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "thread_unsafe(reason=None): test mutates shared/global state"
+    )
+    config.addinivalue_line(
+        "markers", "parallel_threads(n): number of threads to run the test in"
+    )

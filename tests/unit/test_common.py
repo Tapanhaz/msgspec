@@ -870,6 +870,9 @@ class TestLiterals:
         ):
             msgspec.msgpack.Decoder(Literal[()])
 
+    @pytest.mark.thread_unsafe(
+        reason="asserts on __msgspec_cache__ of a shared, typing-cached Literal alias"
+    )
     def test_native_literal_generic_alias(self):
         typ = Literal[1, 2]
         assert type(typ) is typing._LiteralGenericAlias
@@ -921,6 +924,9 @@ class TestLiterals:
         with pytest.raises(TypeError, match="not supported"):
             msgspec.msgpack.Decoder(typ)
 
+    @pytest.mark.thread_unsafe(
+        reason="asserts on __msgspec_cache__ of a shared, typing-cached Literal alias"
+    )
     def test_decode_literal_int_str_and_none_uncached_and_cached(self):
         values = (45987, "an_unlikely_string", None)
         literal = Literal[values]
@@ -1445,6 +1451,7 @@ class TestStructUnion:
 
         assert f"Expected `int | str | {typ} | null`, got `bool`" == str(rec.value)
 
+    @pytest.mark.thread_unsafe(reason="clears/inspects the global _struct_lookup_cache")
     @pytest.mark.parametrize("array_like", [False, True])
     def test_struct_union_cached(self, array_like, proto):
         from msgspec._core import _struct_lookup_cache as cache
@@ -1470,6 +1477,7 @@ class TestStructUnion:
         assert len(cache) == 1
         assert frozenset((Test1, Test2)) in cache
 
+    @pytest.mark.thread_unsafe(reason="clears/inspects the global _struct_lookup_cache")
     def test_struct_union_cache_evicted(self, proto):
         from msgspec._core import _struct_lookup_cache as cache
 

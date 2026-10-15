@@ -1137,6 +1137,9 @@ class TestIntegers:
         assert isinstance(x2, int)
         assert x2 == x
 
+    @pytest.mark.thread_unsafe(
+        reason="mutates process-global sys.set_int_max_str_digits"
+    )
     @pytest.mark.parametrize("max_length", [None, 1000])
     def test_decode_big_int_max_length(self, max_length):
         if max_length is not None:
