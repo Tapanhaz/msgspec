@@ -33,25 +33,60 @@ cat >> /tmp/supp.txt <<'EOF'
 race:dec_addstatus
 race:dec_hash
 EOF
-mkdir -p tsan-logs
-rm -f tsan-logs/*
+mkdir -p tsan-logs pytest-logs
+rm -f tsan-logs/* pytest-logs/*
 
 STRESS=tests/unit/test_free_threading.py
 COMMON=(tests/unit --ignore=tests/unit/test_performance.py --ignore="${STRESS}")
 
+tsan_opts() { 
+  echo "suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:handle_abort=1:log_path=$PWD/tsan-logs/$1"
+}
+  
+LAST_RC=0
 run_phase() {
-  local phase=$1; shift
-  TSAN_OPTIONS="suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:log_path=$PWD/tsan-logs/${phase}" \
-    pytest "$@" -p no:randomly -q || true
+local phase=$1; shift
+LAST_RC=0
+TSAN_OPTIONS="$(tsan_opts "${phase}")" \
+  python -X faulthandler -m pytest "$@" -p no:randomly -q 2>&1 \
+  | tee "pytest-logs/${phase}.txt" || LAST_RC=${PIPESTATUS[0]}
+  echo "${phase}: pytest exit code ${LAST_RC}" >> pytest-logs/exit-codes.txt
+}
+  
+isolate_stress() {
+  local ids n=0 rc id
+  mapfile -t ids < <(python -m pytest --collect-only -q -p no:randomly "${STRESS}" 2>/dev/null | grep '::' || true)
+  : > pytest-logs/stress-isolated.txt
+  for id in "${ids[@]}"; do
+    n=$((n + 1)); rc=0
+    TSAN_OPTIONS="$(tsan_opts "stress-${n}")" \
+      timeout 900 python -X faulthandler -m pytest "${id}" -p no:randomly -q \
+      > "pytest-logs/stress-${n}.txt" 2>&1 || rc=$?
+    echo "${rc} ${id}" >> pytest-logs/stress-isolated.txt
+  done
 }
 
+STRESS_CRASHED=0
 run_phase stress "${STRESS}"
+
+if [ "${LAST_RC}" -ge 124 ]; then
+  STRESS_CRASHED=1
+  isolate_stress
+fi
 run_phase baseline "${COMMON[@]}"
 run_phase parallel "${COMMON[@]}" --parallel-threads=4 --iterations=5
 
 shopt -s nullglob
 logs=(tsan-logs/*)
 {
+  echo "## pytest exit codes per phase (0=ok, 1=failures, 134=abort, 139=segfault, 124=timeout)"
+  cat pytest-logs/exit-codes.txt
+  if [ -s pytest-logs/stress-isolated.txt ]; then
+    echo
+    echo "## stress tests rerun one per process (exit code, test); non-zero means it failed or crashed"
+    grep -v '^0 ' pytest-logs/stress-isolated.txt || echo "(all passed in isolation)"
+  fi
+  echo
   echo "## TSAN unique race sites"
   if [ ${#logs[@]} -eq 0 ]; then
     echo "(none: no TSAN reports)"
@@ -65,6 +100,16 @@ logs=(tsan-logs/*)
            else print "(no _core.c frame)"
          }' "${logs[@]}" | sort | uniq -c | sort -rn
   fi
+  for f in "${logs[@]}"; do
+    if grep -q "ERROR: ThreadSanitizer\|CHECK failed" "${f}"; then
+      echo
+      echo "## fatal signal / TSAN failure in ${f} (first 60 lines)"
+      head -60 "${f}"
+    fi
+  done
 } | tee tsan-summary.txt | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
 
-[ ${#logs[@]} -eq 0 ] || ! grep -q "SUMMARY: ThreadSanitizer" "${logs[@]}"
+status=0
+[ ${#logs[@]} -eq 0 ] || ! grep -q "SUMMARY: ThreadSanitizer" "${logs[@]}" || status=1
+[ "${STRESS_CRASHED}" -eq 0 ] || status=1
+exit "${status}"
