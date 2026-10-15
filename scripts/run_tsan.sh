@@ -45,16 +45,22 @@ run_phase() {
 run_phase baseline
 run_phase parallel --parallel-threads=4 --iterations=5
 
+shopt -s nullglob
+logs=(tsan-logs/*)
 {
   echo "## TSAN unique race sites"
-  grep -h "SUMMARY: ThreadSanitizer" tsan-logs/* 2>/dev/null | sort | uniq -c | sort -rn
-  echo
-  echo "## Reports by first msgspec frame (_core.c)"
-  awk 'BEGIN{RS="==================\n"}
-       /WARNING: ThreadSanitizer/ {
-         if (match($0, /[^ ]*_core\.c:[0-9]+/)) print substr($0, RSTART, RLENGTH)
-         else print "(no _core.c frame)"
-       }' tsan-logs/* 2>/dev/null | sort | uniq -c | sort -rn
+  if [ ${#logs[@]} -eq 0 ]; then
+    echo "(none: no TSAN reports)"
+  else
+    grep -h "SUMMARY: ThreadSanitizer" "${logs[@]}" | sort | uniq -c | sort -rn || true
+    echo
+    echo "## Reports by first msgspec frame (_core.c)"
+    awk 'BEGIN{RS="==================\n"}
+         /WARNING: ThreadSanitizer/ {
+           if (match($0, /[^ ]*_core\.c:[0-9]+/)) print substr($0, RSTART, RLENGTH)
+           else print "(no _core.c frame)"
+         }' "${logs[@]}" | sort | uniq -c | sort -rn
+  fi
 } | tee tsan-summary.txt | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
 
-! grep -q "SUMMARY: ThreadSanitizer" tsan-logs/* 2>/dev/null
+[ ${#logs[@]} -eq 0 ] || ! grep -q "SUMMARY: ThreadSanitizer" "${logs[@]}"
