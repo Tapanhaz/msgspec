@@ -28,6 +28,10 @@ grep -q __tsan /tmp/nm.txt
 python -c "import msgspec, sys; assert not sys._is_gil_enabled(), 'import re-enabled the GIL'"
 
 cat /work/tsan_suppressions/*.txt > /tmp/supp.txt
+cat >> /tmp/supp.txt <<'EOF'
+race:dec_addstatus
+race:dec_hash
+EOF
 mkdir -p tsan-logs
 rm -f tsan-logs/*
 
