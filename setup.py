@@ -32,16 +32,22 @@ def _env_flag(name, default=False):
 
 SANITIZE = _env_flag("MSGSPEC_SANITIZE")
 COVERAGE = _env_flag("MSGSPEC_COVERAGE")
-DEBUG = _env_flag("MSGSPEC_DEBUG", SANITIZE or COVERAGE)
+TSAN = _env_flag("MSGSPEC_TSAN")
+DEBUG = _env_flag("MSGSPEC_DEBUG", SANITIZE or TSAN or COVERAGE)
 
 extra_compile_args = []
 extra_link_args = []
+if TSAN and SANITIZE:
+    raise SystemExit("MSGSPEC_TSAN and MSGSPEC_SANITIZE are mutually exclusive")
 if SANITIZE:
     extra_compile_args.extend(["-fsanitize=address", "-fsanitize=undefined"])
     extra_link_args.extend(["-lasan", "-lubsan"])
 if COVERAGE:
     extra_compile_args.append("--coverage")
     extra_link_args.append("-lgcov")
+if TSAN:
+    extra_compile_args.extend(["-fsanitize=thread", "-fno-omit-frame-pointer"])
+    extra_link_args.append("-fsanitize=thread")
 if DEBUG:
     extra_compile_args.extend(["-O0", "-g", "-UNDEBUG"])
 elif sys.platform != "win32":

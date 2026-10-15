@@ -3,12 +3,20 @@
 set -euxo pipefail
 cd "$(dirname "$0")/.."
 
-export PYTHON_GIL=0 MSGSPEC_TSAN=1 CC=clang
+export PYTHON_GIL=0 MSGSPEC_TSAN=1
+export CC="${CC:-clang-21}" CXX="${CXX:-clang++-21}" 
 export SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0+tsan
 trap 'chown -R --reference=. . 2>/dev/null || true' EXIT
 
 python -c "import sys; assert not sys._is_gil_enabled()"
-command -v clang llvm-symbolizer
+
+SYMBOLIZER=$(command -v llvm-symbolizer-21 || command -v llvm-symbolizer || true)
+if [ -z "${SYMBOLIZER}" ] || ! command -v "${CC}" > /dev/null; then
+  echo "::error::CC='${CC}' or llvm-symbolizer not found"
+  ls /usr/bin | grep -Ei 'clang|llvm' || true
+  exit 1
+fi
+"${CC}" --version
 
 python -m pip install -q -U pip
 python -m pip install -q "setuptools>=80" "setuptools-scm>=8" pytest-run-parallel
@@ -25,7 +33,7 @@ rm -f tsan-logs/*
 
 run_phase() {
   local phase=$1; shift
-  TSAN_OPTIONS="suppressions=/tmp/supp.txt:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:log_path=$PWD/tsan-logs/$phase" \
+  TSAN_OPTIONS="suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:log_path=$PWD/tsan-logs/$phase" \
     pytest tests/unit --ignore=tests/unit/test_performance.py \
       -p no:randomly -q "$@" || true
 }
