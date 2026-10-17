@@ -13210,7 +13210,7 @@ cleanup2:
 }
 
 static MS_NOINLINE int
-mpack_encode_dict(EncoderState *self, PyObject *obj)
+mpack_encode_dict_impl(EncoderState *self, PyObject *obj)
 {
     PyObject *key, *val;
     Py_ssize_t pos = 0;
@@ -13239,6 +13239,24 @@ cleanup:;
     Py_END_CRITICAL_SECTION();
     Py_LeaveRecursiveCall();
     return status;
+}
+
+static int
+mpack_encode_dict(EncoderState *self, PyObject *obj)
+{
+#ifdef Py_GIL_DISABLED
+    /* The map header carries the item count, which must match the number of
+     * items written. Encode a private shallow snapshot (see json_encode_dict)
+     * so another thread cannot change the dict in between. GIL builds encode
+     * `obj` directly. */
+    PyObject *snapshot = PyDict_Copy(obj);
+    if (snapshot == NULL) return -1;
+    int status = mpack_encode_dict_impl(self, snapshot);
+    Py_DECREF(snapshot);
+    return status;
+#else
+    return mpack_encode_dict_impl(self, obj);
+#endif
 }
 
 static int
@@ -14630,7 +14648,7 @@ cleanup2:
 }
 
 static MS_NOINLINE int
-json_encode_dict(EncoderState *self, PyObject *obj)
+json_encode_dict_impl(EncoderState *self, PyObject *obj)
 {
     PyObject *key, *val;
     Py_ssize_t len, pos = 0;
@@ -14659,6 +14677,25 @@ cleanup:;
     Py_END_CRITICAL_SECTION();
     Py_LeaveRecursiveCall();
     return status;
+}
+
+static int
+json_encode_dict(EncoderState *self, PyObject *obj)
+{
+#ifdef Py_GIL_DISABLED
+    /* Another thread may mutate `obj` while it is encoded: the item count is
+     * read before the lock is taken, and the critical section can be
+     * suspended if encoding a value blocks. Encode a private shallow snapshot
+     * so the count, keys and values (held by strong references) stay
+     * consistent. GIL builds encode `obj` directly. */
+    PyObject *snapshot = PyDict_Copy(obj);
+    if (snapshot == NULL) return -1;
+    int status = json_encode_dict_impl(self, snapshot);
+    Py_DECREF(snapshot);
+    return status;
+#else
+    return json_encode_dict_impl(self, obj);
+#endif
 }
 
 static int
