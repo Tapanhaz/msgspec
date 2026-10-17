@@ -141,6 +141,26 @@ def test_struct_union_cache_contention(proto):
     assert len(cache) <= 64, f"struct lookup cache grew to {len(cache)}"
 
 
+@pytest.mark.parametrize("array_like", [False, True])
+def test_struct_union_first_use_shared_types(proto, array_like):
+    for _ in range(40 * SCALE):
+
+        class A(Struct, tag=True, array_like=array_like):
+            a: int
+
+        class B(Struct, tag=True, array_like=array_like):
+            b: int
+
+        typ = Union[A, B]
+        msgs = [(A(1), proto.encode(A(1))), (B(2), proto.encode(B(2)))]
+
+        def work(i, typ=typ, msgs=msgs):
+            for obj, msg in msgs:
+                assert proto.decode(msg, type=typ) == obj
+
+        run_threads(work)
+
+
 class Point(Struct):
     x: int
     y: list[int]
