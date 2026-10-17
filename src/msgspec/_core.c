@@ -3159,11 +3159,12 @@ ms_is_struct_inst(PyObject *o) {
 }
 
 static MS_INLINE StructInfo *
-TypeNode_get_struct_info(TypeNode *type) {
-    /* Struct types are always first */
-    StructInfo *info = type->details[0].pointer;
+StructInfo_wait_initialized(StructInfo *info) {
+    /* A StructInfo is published (on its type, and through union lookups)
+     * before its field types are filled in, so callers must not read `types`
+     * until it is initialized. A no-op on GIL builds. */
 #ifdef Py_GIL_DISABLED
-    if (atomic_load(&info->initialized)) {
+    if (MS_LIKELY(atomic_load(&info->initialized))) {
         return info;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -3173,6 +3174,12 @@ TypeNode_get_struct_info(TypeNode *type) {
     Py_END_ALLOW_THREADS
 #endif
     return info;
+}
+
+static MS_INLINE StructInfo *
+TypeNode_get_struct_info(TypeNode *type) {
+    /* Struct types are always first */
+    return StructInfo_wait_initialized(type->details[0].pointer);
 }
 
 static MS_INLINE Lookup *
@@ -16172,6 +16179,7 @@ mpack_decode_tag_and_lookup_type(
             }
         }
     }
+    if (out != NULL) out = StructInfo_wait_initialized(out);
     return out;
 }
 
@@ -18790,6 +18798,7 @@ json_decode_tag_and_lookup_type(
             ms_invalid_cuint_value(utag, path);
         }
     }
+    if (out != NULL) out = StructInfo_wait_initialized(out);
     return out;
 }
 
@@ -21703,7 +21712,7 @@ convert_lookup_tag(
             out = (StructInfo *)IntLookup_GetUInt64((IntLookup *)lookup, ux);
         }
     }
-    if (out != NULL) return out;
+    if (out != NULL) return StructInfo_wait_initialized(out);
 invalid_value:
     ms_raise_validation_error(path, "Invalid value %R%U", tag);
     return NULL;
