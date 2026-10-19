@@ -75,19 +75,20 @@ isolate_stress() {
   done
 }
 
-STRESS_CRASHED=0
+FAILED=0 
 run_phase stress "${STRESS}"
 
+[[ "${LAST_RC}" -eq 0 ]] || FAILED=1
 if [[ "${LAST_RC}" -ge 124 ]]; then  # abort/segfault/timeout
-  STRESS_CRASHED=1
   isolate_stress
 fi
 run_phase baseline "${COMMON[@]}"
+[[ "${LAST_RC}" -eq 0 ]] || FAILED=1
 
 shopt -s nullglob
 logs=(tsan-logs/*)
 {
-  echo "## pytest exit codes per phase (0=ok, 1=failures, 134=abort, 139=segfault, 124=timeout)"
+  echo "## pytest exit codes per phase (0=ok, 1=test failures, 2=collection error, 124=timeout, 134=abort, 139=segfault)"
   cat pytest-logs/exit-codes.txt
    if [[ -s pytest-logs/stress-isolated.txt ]]; then
     echo
@@ -119,5 +120,5 @@ logs=(tsan-logs/*)
 
 status=0
 [[ ${#logs[@]} -eq 0 ]] || ! grep -q "SUMMARY: ThreadSanitizer" "${logs[@]}" || status=1
-[[ "${STRESS_CRASHED}" -eq 0 ]] || status=1
+[[ "${FAILED}" -eq 0 ]] || status=1
 exit "${status}"

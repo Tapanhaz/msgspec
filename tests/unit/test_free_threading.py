@@ -20,7 +20,8 @@ from .utils import temp_module
 if not os.environ.get("MSGSPEC_STRESS"):
     pytest.skip("stress tests: set MSGSPEC_STRESS=1 to run", allow_module_level=True)
 
-pytestmark = pytest.mark.parallel_threads(1)
+# Marker removed: pytest-run-parallel plugin was dropped in the uv migration
+# pytestmark = pytest.mark.parallel_threads(1)
 
 SCALE = max(1, int(os.environ.get("MSGSPEC_STRESS_SCALE", "1")))
 N_THREADS = 8
