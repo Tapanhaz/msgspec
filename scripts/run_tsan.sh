@@ -57,8 +57,18 @@ run_phase() {
   TSAN_OPTIONS="${opts}" \
     timeout 2400 python -X faulthandler -m pytest "$@" -p no:randomly -q 2>&1 \
     | tee "pytest-logs/${phase}.txt" || LAST_RC=${PIPESTATUS[0]}
-   echo "${phase}: pytest exit code ${LAST_RC}" >> pytest-logs/exit-codes.txt
+  echo "${phase}: pytest exit code ${LAST_RC}" >> pytest-logs/exit-codes.txt
 }
+
+symbolize_core_frames() {  # $1 = pytest log
+  local so offsets addrs
+  so=$(find src/msgspec -maxdepth 1 -name '_core*.so' | head -n 1)
+  offsets=$({ grep -o '_core[^"]*\.so", at +0x[0-9a-f]*' "$1" | grep -o '0x[0-9a-f]*$' | awk '!seen[$0]++' | tr '\n' ' '; } || true)
+  [[ -n "${offsets}" ]] || return 0
+  read -r -a addrs <<< "${offsets}"
+  "${SYMBOLIZER}" --obj="${so}" --inlining --demangle "${addrs[@]}" || true
+}
+
 
 # One test per process
 isolate_stress() {
@@ -90,14 +100,14 @@ logs=(tsan-logs/*)
 {
   echo "## pytest exit codes per phase (0=ok, 1=test failures, 2=collection error, 124=timeout, 134=abort, 139=segfault)"
   cat pytest-logs/exit-codes.txt
-   if [[ -s pytest-logs/stress-isolated.txt ]]; then
+  if [[ -s pytest-logs/stress-isolated.txt ]]; then
     echo
     echo "## stress tests rerun one per process (exit code, test); non-zero means it failed or crashed"
     grep -v '^0 ' pytest-logs/stress-isolated.txt || echo "(all passed in isolation)"
   fi
   echo
   echo "## TSAN unique race sites"
-   if [[ ${#logs[@]} -eq 0 ]]; then
+  if [[ ${#logs[@]} -eq 0 ]]; then
     echo "(none: no TSAN reports)"
   else
     grep -h "SUMMARY: ThreadSanitizer" "${logs[@]}" | sort | uniq -c | sort -rn || true
@@ -109,6 +119,15 @@ logs=(tsan-logs/*)
            else print "(no _core.c frame)"
          }' "${logs[@]}" | sort | uniq -c | sort -rn
   fi
+  for f in pytest-logs/stress*.txt; do
+    if grep -q "Fatal Python error" "${f}"; then
+      echo
+      echo "## crash in ${f}: assertion text and Python stack"
+      { grep -h "Assertion\|assert" "${f}" | head -5; grep -A8 "^Stack (most recent call first)" "${f}" | head -12; } || true
+      echo "## msgspec frames in ${f} (function, file:line)"
+      symbolize_core_frames "${f}"
+    fi
+  done
   for f in "${logs[@]}"; do
     if grep -q "ERROR: ThreadSanitizer\|CHECK failed" "${f}"; then
       echo
