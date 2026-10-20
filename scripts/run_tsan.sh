@@ -42,9 +42,9 @@ rm -f tsan-logs/* pytest-logs/*
 STRESS=tests/unit/test_free_threading.py
 COMMON=(tests/unit --ignore=tests/unit/test_performance.py --ignore="${STRESS}")
 
-# handle_segv=0
+# exitcode=66
 tsan_opts() {
-  echo "suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=0:history_size=7:second_deadlock_stack=1:handle_segv=0:log_path=${PWD}/tsan-logs/${1}"
+  echo "suppressions=/tmp/supp.txt:external_symbolizer_path=${SYMBOLIZER}:halt_on_error=0:exitcode=66:history_size=7:second_deadlock_stack=1:handle_segv=0:log_path=${PWD}/tsan-logs/${1}"
 }
 
 
@@ -98,7 +98,7 @@ run_phase baseline "${COMMON[@]}"
 shopt -s nullglob
 logs=(tsan-logs/*)
 {
-  echo "## pytest exit codes per phase (0=ok, 1=test failures, 2=collection error, 124=timeout, 134=abort, 139=segfault)"
+  echo "## pytest exit codes per phase (0=ok, 1=test failures, 2=collection error, 66=TSAN reported or died, 124=timeout, 134=abort, 139=segfault)"
   cat pytest-logs/exit-codes.txt
   if [[ -s pytest-logs/stress-isolated.txt ]]; then
     echo

@@ -3,7 +3,7 @@ name: ThreadSanitizer (free-threaded)
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
     branches:
     - main
